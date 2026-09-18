@@ -1,6 +1,6 @@
 #include "core/Project.h"
 #include "renderer/Dx12Renderer.h"
-#include <Windows.h>
+#include <windows.h>
 #include <windowsx.h>
 #include <commctrl.h>
 #include <commdlg.h>
@@ -314,6 +314,12 @@ LRESULT Application::message(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
             if(LOWORD(wp)==BaseList && HIWORD(wp)==LBN_SELCHANGE) {auto i=SendMessageW(control(BaseList),LB_GETCURSEL,0,0);if(i!=LB_ERR) select(static_cast<std::size_t>(i));}
             else if(HIWORD(wp)==BN_CLICKED) command(LOWORD(wp));return 0;
         case WM_TIMER: tick();return 0;
+        case WM_MOUSEWHEEL: {
+            POINT point{GET_X_LPARAM(lp),GET_Y_LPARAM(lp)};ScreenToClient(viewport,&point);
+            RECT rect{};GetClientRect(viewport,&rect);
+            if(PtInRect(&rect,point)) {camera.zoom(static_cast<float>(GET_WHEEL_DELTA_WPARAM(wp))/WHEEL_DELTA);return 0;}
+            break;
+        }
         case WM_CLOSE: if(confirmReplace()) DestroyWindow(hwnd);return 0;
         case WM_DESTROY: KillTimer(hwnd,1);PostQuitMessage(failed ? 1:0);return 0;
         }

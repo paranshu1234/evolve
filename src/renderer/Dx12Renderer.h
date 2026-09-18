@@ -1,6 +1,6 @@
 #pragma once
 #include "core/Geometry.h"
-#include <Windows.h>
+#include <windows.h>
 #include <d3d12.h>
 #include <dxgi1_4.h>
 #include <DirectXMath.h>

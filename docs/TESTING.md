@@ -1,5 +1,13 @@
 # Verification
 
+## Verification performed on 2026-09-18
+
+- Linux CMake Release configure/build and CTest: passed; all 34 project/geometry checks passed.
+- Existing console skeleton: compiled and ran successfully.
+- Desktop and renderer: cross-compiled for Windows x64 with LLVM/MinGW (Zig 0.16), using Microsoft's DirectXMath headers, and linked into a Windows executable. This checks native code and Windows API linkage; it is not an MSVC build or runtime test.
+- GitHub Actions run 35302221039 stopped with failed jobs before any job steps were recorded; build logs were unavailable. The cause was not established from the available metadata.
+- Windows runtime smoke test, GPU screenshot, and manual UI validation remain pending. No rendered screenshot is claimed.
+
 ## Automated
 
 `evolve_tests` exercises 34 conditions, including FASTA normalization, format/size errors, immutable baseline, undo/redo branching, stale-result rejection, serialization, non-destructive failed loads/imports, bounded meshes, and finite geometry.
