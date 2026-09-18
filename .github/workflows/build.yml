@@ -1,0 +1,49 @@
+name: Build and test v0.1
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  core:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build --parallel
+      - run: ctest --test-dir build --output-on-failure
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: cmake -S . -B build -A x64
+      - run: cmake --build build --config Release --parallel
+      - run: ctest --test-dir build -C Release --output-on-failure
+      - name: DirectX 12 WARP smoke test
+        shell: pwsh
+        run: |
+          $process = Start-Process build/Release/Evolve.exe -ArgumentList '--warp','--smoke-test' -PassThru
+          if (-not $process.WaitForExit(60000)) {
+            $process.Kill()
+            throw 'Renderer smoke test exceeded 60 seconds.'
+          }
+          if ($process.ExitCode -ne 0) {
+            Get-Content smoke-test-error.log -ErrorAction SilentlyContinue
+            throw "Renderer smoke test failed: $($process.ExitCode)"
+          }
+          Get-Content smoke-test.log
+      - name: Assemble portable Windows package
+        run: cmake --install build --config Release --prefix build/package
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Evolve-v0.1-Windows-x64
+          path: build/package/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Evolve-render-smoke-evidence
+          path: |
+            evolve-v0.1-viewport.bmp
+            smoke-test*.log
+            smoke-test.evolve

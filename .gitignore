@@ -1,0 +1,10 @@
+/build/
+/out/
+/.vs/
+*.user
+*.obj
+*.exe
+*.pdb
+*.ilk
+*.log
+*.bmp
