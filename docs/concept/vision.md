@@ -4,7 +4,7 @@
 
 Evolve is a conceptual framework exploring biological autonomy for consenting adults. The project proposes a transition away from biological lock-in, outlining a future where individuals can safely restore, correct, or voluntarily enhance living biological form and function through personalized, non-surgical pathways.
 
-*Read the foundational concept in the [Evolve_White_Paper_v0.2.pdf]*.
+The working white-paper draft remains in the project's research archive. See the [public research scope](../research/README.md) for current boundaries and publication status.
 
 ## The Problem: Biological Lock-In
 
@@ -52,5 +52,5 @@ This project is strictly limited to consenting adults. It explicitly does not pr
 
 ## Roadmap
 
-Evolve is currently in the foundational phase. The immediate goal is to precisely define the problem, terminology, and system boundaries. Future development stages will separately examine scientific feasibility, technical architecture, ethics, regulation, and finance before any prototype is created.
+Evolve is currently in the foundational phase. The immediate goal is to precisely define the problem, terminology, and system boundaries. A schematic DNA visualization prototype now supports software exploration; it does not establish biological feasibility. Further work will separately examine scientific feasibility, technical architecture, ethics, regulation, and finance. See the [current roadmap](../roadmap.md).
 

@@ -1,6 +1,14 @@
-/build/
-/out/
-/.vs/
+**/build/
+**/out/
+**/.vs/
+**/node_modules/
+**/.next/
+**/.vercel/
+*.tsbuildinfo
+**/.env*
+!**/.env.example
+*.zip
+**/smoke-test.evolve
 *.user
 *.obj
 *.exe

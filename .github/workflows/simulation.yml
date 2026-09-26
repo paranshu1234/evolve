@@ -1,10 +1,17 @@
-name: Build and test v0.1
+name: Simulation
 on:
   push:
+    branches: ['**']
+    paths: ['apps/simulation/**', '.github/workflows/simulation.yml']
+    tags: ['simulation-v*']
   pull_request:
+    paths: ['apps/simulation/**', '.github/workflows/simulation.yml']
   workflow_dispatch:
 permissions:
   contents: read
+defaults:
+  run:
+    working-directory: apps/simulation
 jobs:
   core:
     runs-on: ubuntu-latest
@@ -23,7 +30,7 @@ jobs:
       - name: DirectX 12 WARP smoke test
         shell: pwsh
         run: |
-          $process = Start-Process build/Release/Evolve.exe -ArgumentList '--warp','--smoke-test' -PassThru
+          $process = Start-Process build/Release/Evolve.exe -ArgumentList '--warp','--smoke-test' -WindowStyle Hidden -PassThru
           if (-not $process.WaitForExit(60000)) {
             $process.Kill()
             throw 'Renderer smoke test exceeded 60 seconds.'
@@ -38,12 +45,33 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Evolve-v0.1-Windows-x64
-          path: build/package/
+          path: apps/simulation/build/package/
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: Evolve-render-smoke-evidence
           path: |
-            evolve-v0.1-viewport.bmp
-            smoke-test*.log
-            smoke-test.evolve
+            apps/simulation/evolve-v0.1-viewport.bmp
+            apps/simulation/smoke-test*.log
+            apps/simulation/smoke-test.evolve
+  release:
+    if: startsWith(github.ref, 'refs/tags/simulation-v')
+    needs: [core, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    defaults:
+      run:
+        working-directory: .
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: Evolve-v0.1-Windows-x64
+          path: package
+      - run: cd package && zip -r ../Evolve-Windows-x64.zip .
+      - name: Publish desktop release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: gh release create "$RELEASE_TAG" Evolve-Windows-x64.zip --verify-tag --title "Evolve desktop $RELEASE_TAG" --generate-notes

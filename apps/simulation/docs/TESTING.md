@@ -1,6 +1,15 @@
 # Verification
 
-## Verification performed on 2026-09-18
+## Monorepo verification performed on 2026-09-26
+
+- Clean configure and Release build passed with Visual Studio 2026 / MSVC 19.51.
+- CTest passed all 34 core/geometry checks from `apps/simulation`.
+- CMake installation assembled the executable, README, changelog, examples, and component documentation.
+- Windows WARP smoke test passed: DX12 initialization, geometry readback (32,698 visible pixels), orbit/zoom, resize, compare, edit, mock analysis, and save/reopen.
+- The C++ implementation files are unchanged by the directory migration. MSVC exception unwinding is now explicitly enabled with `/EHsc` in CMake.
+- Hardware-driver, accessibility, and full manual desktop validation remain separate checks.
+
+## Historical verification performed on 2026-09-18
 
 - Linux CMake Release configure/build and CTest: passed; all 34 project/geometry checks passed.
 - Existing console skeleton: compiled and ran successfully.
