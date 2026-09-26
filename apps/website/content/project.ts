@@ -1,5 +1,5 @@
 // Public copy only. Working research and business documents remain in Drive.
-export const repository = "https://github.com/paranshu1234/evolve.ai";
+export const repository = "https://github.com/paranshu1234/evolve";
 export const pillars = [
   {
     number: "01",

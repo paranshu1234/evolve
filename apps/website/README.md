@@ -31,4 +31,4 @@ Website checks in GitHub Actions run only for website/workflow changes. This is 
 
 ## Content publication
 
-The site uses existing public project concepts. No private financial plans, pitch decks, research drafts, contact details, or Drive links are included. Review publication editions before adding downloadable documents. Repository links currently use the verified `paranshu1234/evolve.ai` slug; update `content/project.ts` when the GitHub rename is completed.
+The site uses existing public project concepts. No private financial plans, pitch decks, research drafts, contact details, or Drive links are included. Review publication editions before adding downloadable documents. Repository links use the verified `paranshu1234/evolve` slug and are maintained in `content/project.ts`.

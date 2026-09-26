@@ -32,10 +32,10 @@ Windows also builds the desktop application. See its README for prerequisites an
 
 ## Publications and downloads
 
-Desktop binaries belong in [GitHub Releases](https://github.com/paranshu1234/evolve.ai/releases), created by `simulation-v*` tags after tests pass. A release may not yet be available; the desktop README includes source build instructions. The website's live URL will be added after its first verified deployment.
+Desktop binaries belong in [GitHub Releases](https://github.com/paranshu1234/evolve/releases), created by `simulation-v*` tags after tests pass. A release may not yet be available; the desktop README includes source build instructions. The website's live URL will be added after its first verified deployment.
 
 ## Public and private materials
 
 GitHub is authoritative for source code and maintained public technical documentation. Working research documents, financial plans, pitch decks, private document indexes, and original design explorations remain in restricted Drive storage. Only reviewed publication editions and selected website assets should be copied into this repository. No automatic Drive synchronization is configured.
 
-The project is named **Evolve**. The existing GitHub repository slug is currently `evolve.ai`; repository renaming is tracked separately from the code migration so existing links remain usable.
+The public repository is [paranshu1234/evolve](https://github.com/paranshu1234/evolve). It preserves the history of the original `evolve.ai` repository.
