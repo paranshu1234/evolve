@@ -16,33 +16,98 @@ The original project vision is preserved in the repository's public concept docu
 - CSV result export, lighting control, optional completion sound and keyboard navigation.
 - Hardware DX12 with software WARP fallback; an automated renderer smoke mode.
 
-## Run on Windows
+## Install, build and run on Windows
 
-**Requirements:** Windows 10/11 x64, a DirectX 12 compatible graphics driver (or WARP), and Visual Studio 2022 or newer with **Desktop development with C++**, **Windows SDK**, and **C++ CMake tools**.
+### Prerequisites
 
-From Developer PowerShell for Visual Studio, in the `apps/simulation` directory:
+Use Windows 10 or 11 x64. A DirectX 12 graphics driver is recommended, but the application can use Windows' software WARP renderer when hardware acceleration is unavailable.
+
+Install **Visual Studio 2022 or newer** and select these components in Visual Studio Installer:
+
+- **Desktop development with C++** workload
+- **C++ CMake tools for Windows**
+- A current **Windows 10 or Windows 11 SDK**
+
+Git is needed to clone the repository. Visual Studio supplies the MSVC compiler, Windows SDK and CMake integration. After installing or modifying Visual Studio, open a new **Developer PowerShell for Visual Studio** so its compiler tools are available.
+
+Verify CMake before building:
 
 ```powershell
-.\scripts\build-windows.ps1
-.\build\Release\Evolve.exe
+cmake --version
 ```
 
-Equivalent manual commands:
+If that command is not recognized, reopen Developer PowerShell or add the CMake component through Visual Studio Installer.
+
+### Build from source
+
+From the repository root, enter the simulation directory:
+
+```powershell
+cd .\apps\simulation
+```
+
+Run the build helper:
+
+```powershell
+.\scripts\build-windows.ps1 -Configuration Release
+```
+
+The helper configures a 64-bit CMake build, compiles the application and test executable, and runs the portable core tests. A successful build ends by printing the executable path:
+
+```text
+apps\simulation\build\Release\Evolve.exe
+```
+
+If PowerShell blocks the script, permit local scripts only for the current terminal session and rerun it:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+.\scripts\build-windows.ps1 -Configuration Release
+```
+
+To perform the same steps manually:
 
 ```powershell
 cmake -S . -B build -A x64
-cmake --build build --config Release
+cmake --build build --config Release --parallel
 ctest --test-dir build -C Release --output-on-failure
+```
+
+For a debuggable build, replace `Release` with `Debug`. Its executable will be under `build\Debug`.
+
+### Run the desktop application
+
+After a successful Release build, launch:
+
+```powershell
 .\build\Release\Evolve.exe
 ```
 
-The Windows workflow builds a portable **Evolve-v0.1-Windows-x64** artifact after its tests pass. Download it from the successful run's **Artifacts** section in GitHub Actions, extract it, and run `Evolve.exe`. The artifact is built from source, uses the static MSVC runtime, and is not code-signed. The original console skeleton is maintained in `legacy/simulation.cpp` and builds as `evolve_cli`; it is separate from the desktop app. Generated binaries are not tracked in Git.
-
-If graphics initialization fails, update your GPU driver or try:
+If graphics initialization fails, update the graphics driver or force the Windows software renderer:
 
 ```powershell
 .\build\Release\Evolve.exe --warp
 ```
+
+The first screen contains a synthetic 24-base example, so no input file is required to begin. Imported sequences stay local, and the application makes no network requests.
+
+### Verify the renderer
+
+The optional smoke test launches the real DirectX 12 path with WARP, performs an edit and mock analysis, captures a rendered frame, and verifies project save/reopen:
+
+```powershell
+.\build\Release\Evolve.exe --warp --smoke-test
+$LASTEXITCODE
+Get-Content .\smoke-test.log
+```
+
+An exit code of `0` indicates success. The generated `evolve-v0.1-viewport.bmp`, `smoke-test.evolve` and log files are test evidence and are ignored by Git.
+
+### Use a prebuilt package
+
+The Windows CI workflow builds a portable **Evolve-v0.1-Windows-x64** artifact after all tests pass. Open a successful Simulation workflow run in GitHub Actions, download the artifact, extract it, and run `Evolve.exe`. The package uses the static MSVC runtime and does not need installation, but it is not currently code-signed, so Windows may show an unrecognized-publisher warning.
+
+The original console skeleton is maintained in `legacy/simulation.cpp` and builds as `evolve_cli`; it is separate from the desktop application. Generated binaries are not tracked in Git.
 
 ## First walkthrough
 
@@ -92,14 +157,6 @@ Direct compiler alternative:
 ```sh
 g++ -std=c++17 -Wall -Wextra -Wpedantic -Isrc src/core/Project.cpp src/core/Geometry.cpp tests/CoreTests.cpp -o evolve_tests
 ./evolve_tests
-```
-
-On Windows, exercise the real graphics backend and write a viewport BMP plus a diagnostic log:
-
-```powershell
-$p = Start-Process .\build\Release\Evolve.exe -ArgumentList '--warp','--smoke-test' -PassThru -Wait
-$p.ExitCode
-Get-Content .\smoke-test.log
 ```
 
 ## Current limits
