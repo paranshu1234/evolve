@@ -1,4 +1,5 @@
 #include "core/Project.h"
+#include "desktop/VoicePanel.h"
 #include "renderer/Dx12Renderer.h"
 #include <windows.h>
 #include <windowsx.h>
@@ -19,7 +20,7 @@
 namespace {
 using namespace evolve;
 constexpr COLORREF Background=RGB(14,21,30),Panel=RGB(23,33,45),Text=RGB(224,234,242),Muted=RGB(140,162,182),Accent=RGB(67,217,182);
-enum Control {Demo=100,Import,Open,Save,Export,BaseList,BaseA,BaseC,BaseG,BaseT,Undo,Redo,Restore,Compare,Grid,Rotate,Frame,Run,Cancel,Sound,Light,Selection,Result,Progress,Status,Source};
+enum Control {Demo=100,Import,Open,Save,Export,BaseList,BaseA,BaseC,BaseG,BaseT,Undo,Redo,Restore,Compare,Grid,Rotate,Frame,Run,Cancel,Sound,Light,Selection,Result,Progress,Status,Source,Voice};
 
 std::wstring wide(const std::string& s) {
     if(s.empty()) return {};
@@ -53,13 +54,15 @@ public:
     HWND window{},viewport{};
     bool smoke{},warp{},failed{};
     int smokeFrame{};
-    ~Application() {renderer.reset();if(font) DeleteObject(font);if(headingFont) DeleteObject(headingFont);DeleteObject(backgroundBrush);DeleteObject(panelBrush);}
+    ~Application() {voicePanel.reset();renderer.reset();if(font) DeleteObject(font);if(headingFont) DeleteObject(headingFont);DeleteObject(backgroundBrush);DeleteObject(panelBrush);}
     void create(HINSTANCE instance);
     int loop();
     LRESULT message(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp);
     LRESULT viewportMessage(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp);
 private:
     Project project;
+    std::uint64_t projectEpoch{1};
+    std::unique_ptr<evolve::voice::VoicePanel> voicePanel;
     std::unique_ptr<Dx12Renderer> renderer;
     OrbitCamera camera;
     std::size_t selected{};
@@ -83,6 +86,8 @@ private:
     void setStatus(const std::wstring& message) {SetWindowTextW(control(Status),message.c_str());}
     void mutate(bool changed);
     void command(int id);
+    std::string execute(const evolve::voice::Action& action);
+    evolve::voice::WorkspaceContext voiceContext() const;
     void tick();
     void select(std::size_t index);
     void frame() {camera.frame(project.sequence().size(),compare,renderer->aspect());}
@@ -126,7 +131,7 @@ void Application::create(HINSTANCE instance) {
     if(!window) throw std::runtime_error("Cannot create application window.");
     viewport=CreateWindowExW(0,L"EvolveViewport",L"DNA viewport",WS_CHILD|WS_VISIBLE|WS_TABSTOP,0,0,1,1,window,nullptr,instance,this);
     if(!viewport) throw std::runtime_error("Cannot create 3D viewport.");
-    button(L"Demo project",Demo);button(L"Import DNA",Import);button(L"Open project",Open);button(L"Save project",Save);button(L"Export results",Export);
+    button(L"Demo project",Demo);button(L"Import DNA",Import);button(L"Open project",Open);button(L"Save project",Save);button(L"Export results",Export);button(L"Voice Agent",Voice);
     add(L"STATIC",L"Synthetic example / 24 bases",Source);
     add(L"LISTBOX",L"",BaseList,LBS_NOTIFY|WS_VSCROLL|WS_TABSTOP|LBS_NOINTEGRALHEIGHT);
     add(L"STATIC",L"",Selection);
@@ -146,7 +151,7 @@ void Application::layout() {
     if(!viewport) return;
     RECT r{};GetClientRect(window,&r);int w=static_cast<int>(static_cast<float>(r.right)/scale),h=static_cast<int>(static_cast<float>(r.bottom)/scale);
     const int right=w-282;
-    place(Demo,22,66,128,32);place(Import,158,66,112,32);place(Open,278,66,120,32);place(Save,406,66,116,32);place(Export,530,66,126,32);
+    place(Demo,22,66,128,32);place(Import,158,66,112,32);place(Open,278,66,120,32);place(Save,406,66,116,32);place(Export,530,66,126,32);place(Voice,664,66,126,32);
     place(Source,22,143,178,50);place(BaseList,22,198,178,std::max(170,h-295));
     place(Selection,right,146,260,75);
     for(int i=0;i<4;++i) place(BaseA+i,right+i*65,231,57,34);
@@ -236,40 +241,101 @@ std::filesystem::path Application::fileDialog(bool save,bool projectFile,bool cs
 }
 bool Application::saveProject() {
     auto path=currentPath.empty() ? fileDialog(true,true):currentPath;if(path.empty()) return false;
-    atomicWrite(path,project.serialize());currentPath=path;dirty=false;refresh(false);setStatus(L"Project saved locally. Baseline and virtual edits preserved.");return true;
+    atomicWrite(path,project.serialize());if(currentPath!=path) ++projectEpoch;currentPath=path;dirty=false;refresh(false);setStatus(L"Project saved locally. Baseline and virtual edits preserved.");return true;
+}
+evolve::voice::WorkspaceContext Application::voiceContext() const {
+    std::ostringstream summary;
+    summary << "Schematic DNA workspace; mock composition only, no biological predictions. "
+            << "Base count: " << project.sequence().size() << "; selected base (1-based): " << selected+1
+            << "; revision: " << project.revision() << "; undo available: " << project.canUndo()
+            << "; redo available: " << project.canRedo() << "; mock analysis running: " << running
+            << "; current mock result available: " << project.hasResult()
+            << "; compare: " << compare << "; grid: " << grid << "; rotation: " << rotate << '.';
+    std::size_t edits{};
+    for(std::size_t i=0;i<project.sequence().size();++i) if(project.sequence()[i]!=project.baseline()[i]) ++edits;
+    return {projectEpoch,project.revision(),project.sequence().size(),summary.str(),
+        {project.sequence().size(),edits,gcContent(project.sequence()),project.canUndo(),project.canRedo(),project.hasResult(),running}};
+}
+std::string Application::execute(const evolve::voice::Action& action) {
+    // Nested native file dialogs must not allow reentrant voice operations.
+    struct VoiceBusy {
+        evolve::voice::VoicePanel* panel;
+        explicit VoiceBusy(evolve::voice::VoicePanel* p):panel(p) {if(panel) panel->setWorkspaceBusy(true);}
+        ~VoiceBusy() {if(panel) panel->setWorkspaceBusy(false);}
+    } voiceBusy(voicePanel.get());
+    using evolve::voice::ActionType;
+    if(!evolve::voice::isValidAction(action,project.sequence().size())) throw std::invalid_argument("Invalid workspace action.");
+    switch(action.type) {
+    case ActionType::Help: return "Try select base 3, edit base 3 to A, undo, compare on, frame all, or run analysis. Analysis is mock composition only.";
+    case ActionType::DescribeProject: return voiceContext().summary;
+    case ActionType::SelectBase: select(action.index);return "Selected base " + std::to_string(selected+1) + ".";
+    case ActionType::EditBase: {
+        const bool changed=project.edit(action.index,action.base);selected=action.index;mutate(changed);refresh();
+        return changed ? "Virtual base edit applied. Previous analysis is invalidated." : "That base already has the requested value.";
+    }
+    case ActionType::LoadDemo:
+        if(!confirmReplace()) return "Cancelled. Current project preserved.";
+        cancel();project.importSequence(DemoSequence);++projectEpoch;currentPath.clear();dirty=false;selected=0;
+        SetWindowTextW(control(Source),L"Synthetic example / 24 bases");frame();refresh();setStatus(L"Synthetic example loaded.");return "Synthetic example loaded.";
+    case ActionType::ImportSequence: case ActionType::OpenProject: {
+        if(!confirmReplace()) return "Cancelled. Current project preserved.";
+        const bool opening=action.type==ActionType::OpenProject;
+        auto path=fileDialog(false,opening);if(path.empty()) return "File selection cancelled. Current project preserved.";
+        auto text=readFile(path);
+        if(opening) project.deserialize(text);else project.importSequence(text);
+        ++projectEpoch;cancel();currentPath=opening ? path:std::filesystem::path{};dirty=!opening;selected=0;
+        SetWindowTextW(control(Source),(L"Local input / "+std::to_wstring(project.sequence().size())+L" bases").c_str());frame();refresh();setStatus(L"Loaded locally. Geometry is schematic; no scientific inference is connected.");return "Project loaded locally.";
+    }
+    case ActionType::SaveProject: return saveProject() ? "Project saved locally." : "Save cancelled.";
+    case ActionType::ExportResults: {
+        if(!project.hasResult()) return "No current result. Run mock analysis first.";
+        auto path=fileDialog(true,false,true);if(path.empty()) return "Export cancelled.";
+        auto r=project.result();std::ostringstream csv;csv<<"model,revision,baseline_gc_percent,scenario_gc_percent,edited_bases,evidence\n"<<r.model<<','<<r.revision<<','<<r.baselineGc<<','<<r.scenarioGc<<','<<r.edits<<",composition_only_no_biological_prediction\n";
+        atomicWrite(path,csv.str());setStatus(L"Composition results exported as CSV.");return "Mock composition results exported locally.";
+    }
+    case ActionType::Undo: {const bool changed=project.undo();mutate(changed);return changed ? "Undo applied." : "Nothing to undo.";}
+    case ActionType::Redo: {const bool changed=project.redo();mutate(changed);return changed ? "Redo applied." : "Nothing to redo.";}
+    case ActionType::RestoreBaseline: {const bool changed=project.restoreBaseline();mutate(changed);return changed ? "Baseline restored. You can undo this change." : "Scenario already matches baseline.";}
+    case ActionType::SetCompare: compare=action.enabled;SetWindowTextW(control(Compare),compare ? L"Compare: on":L"Compare: off");frame();refresh();InvalidateRect(window,nullptr,TRUE);return compare ? "Comparison enabled." : "Comparison disabled.";
+    case ActionType::SetGrid: grid=action.enabled;SetWindowTextW(control(Grid),grid ? L"Grid: on":L"Grid: off");refresh();return grid ? "Grid enabled." : "Grid disabled.";
+    case ActionType::SetRotation: rotate=action.enabled;SetWindowTextW(control(Rotate),rotate ? L"Rotate: on":L"Rotate: off");return rotate ? "Rotation enabled." : "Rotation disabled.";
+    case ActionType::FrameAll: frame();return "Framed all bases.";
+    case ActionType::SetLighting: SendMessageW(control(Light),TBM_SETPOS,TRUE,static_cast<LPARAM>(action.scalar));return "Lighting adjusted.";
+    case ActionType::RunAnalysis: if(running) return "Mock analysis is already running.";
+        pending=project.analyze();running=true;started=std::chrono::steady_clock::now();refresh(false);setStatus(L"Running mock composition analysis...");return "Started mock composition analysis. No biological predictions.";
+    case ActionType::CancelAnalysis: cancel();refresh(false);setStatus(L"Analysis cancelled. Existing data preserved.");return "Mock analysis cancelled.";
+    }
+    throw std::invalid_argument("Unsupported workspace action.");
 }
 void Application::command(int id) {
-    if(id>=BaseA && id<=BaseT) {mutate(project.edit(selected,"ACGT"[id-BaseA]));return;}
+    using evolve::voice::Action;using evolve::voice::ActionType;
+    Action action{};
+    if(id>=BaseA && id<=BaseT) {action.type=ActionType::EditBase;action.index=selected;action.base="ACGT"[id-BaseA];execute(action);return;}
     switch(id) {
-    case Demo:
-        if(!confirmReplace()) break;
-        cancel();project.importSequence(DemoSequence);currentPath.clear();dirty=false;selected=0;
-        SetWindowTextW(control(Source),L"Synthetic example / 24 bases");frame();refresh();setStatus(L"Synthetic example loaded.");break;
-    case Import: case Open: {
-        if(!confirmReplace()) break;
-        auto path=fileDialog(false,id==Open);if(path.empty()) break;
-        auto text=readFile(path);
-        if(id==Import) project.importSequence(text);else project.deserialize(text);
-        cancel();currentPath=id==Open ? path:std::filesystem::path{};dirty=id==Import;selected=0;
-        SetWindowTextW(control(Source),(L"Local input / "+std::to_wstring(project.sequence().size())+L" bases").c_str());frame();refresh();setStatus(L"Loaded locally. Geometry is schematic; no scientific inference is connected.");break;
+    case Voice:
+        if(!voicePanel) voicePanel=std::make_unique<evolve::voice::VoicePanel>([this] {return voiceContext();},[this](const Action& a) {return execute(a);});
+        voicePanel->show(window,scale);return;
+    case Demo: action.type=ActionType::LoadDemo;break;
+    case Import: action.type=ActionType::ImportSequence;break;
+    case Open: action.type=ActionType::OpenProject;break;
+    case Save: action.type=ActionType::SaveProject;break;
+    case Export: action.type=ActionType::ExportResults;break;
+    case Undo: action.type=ActionType::Undo;break;
+    case Redo: action.type=ActionType::Redo;break;
+    case Restore: action.type=ActionType::RestoreBaseline;break;
+    case Compare: action.type=ActionType::SetCompare;action.enabled=!compare;break;
+    case Grid: action.type=ActionType::SetGrid;action.enabled=!grid;break;
+    case Rotate: action.type=ActionType::SetRotation;action.enabled=!rotate;break;
+    case Frame: action.type=ActionType::FrameAll;break;
+    case Run: action.type=ActionType::RunAnalysis;break;
+    case Cancel: action.type=ActionType::CancelAnalysis;break;
+    case Sound: sound=!sound;SetWindowTextW(control(Sound),sound ? L"Sound: on":L"Sound: off");return;
+    default:return;
     }
-    case Save: saveProject();break;
-    case Export: {
-        if(!project.hasResult()) break;auto path=fileDialog(true,false,true);if(path.empty()) break;
-        auto r=project.result();std::ostringstream csv;csv<<"model,revision,baseline_gc_percent,scenario_gc_percent,edited_bases,evidence\n"<<r.model<<','<<r.revision<<','<<r.baselineGc<<','<<r.scenarioGc<<','<<r.edits<<",composition_only_no_biological_prediction\n";
-        atomicWrite(path,csv.str());setStatus(L"Composition results exported as CSV.");break;
-    }
-    case Undo: mutate(project.undo());break;case Redo: mutate(project.redo());break;case Restore: mutate(project.restoreBaseline());break;
-    case Compare: compare=!compare;SetWindowTextW(control(Compare),compare ? L"Compare: on":L"Compare: off");frame();refresh();InvalidateRect(window,nullptr,TRUE);break;
-    case Grid: grid=!grid;SetWindowTextW(control(Grid),grid ? L"Grid: on":L"Grid: off");refresh();break;
-    case Rotate: rotate=!rotate;SetWindowTextW(control(Rotate),rotate ? L"Rotate: on":L"Rotate: off");break;
-    case Frame: frame();break;
-    case Sound: sound=!sound;SetWindowTextW(control(Sound),sound ? L"Sound: on":L"Sound: off");break;
-    case Run: if(!running) {pending=project.analyze();running=true;started=std::chrono::steady_clock::now();refresh(false);setStatus(L"Running mock composition analysis...");}break;
-    case Cancel: cancel();refresh(false);setStatus(L"Analysis cancelled. Existing data preserved.");break;
-    }
+    execute(action);
 }
 void Application::tick() {
+    if(voicePanel) voicePanel->poll();
     if(!renderer || IsIconic(window)) return;
     const auto now=std::chrono::steady_clock::now();float dt=std::min(0.1f,std::chrono::duration<float>(now-lastTick).count());lastTick=now;
     if(rotate && !dragButton) camera.yaw+=dt*0.25f;
@@ -281,7 +347,11 @@ void Application::tick() {
     std::wstring screenshot;
     if(smoke) {
         ++smokeFrame;
-        if(smokeFrame==2) {command(BaseC);command(Compare);camera.orbit(20,-8);camera.zoom(0.5f);}
+        if(smokeFrame==2) {
+            command(BaseC);command(Compare);camera.orbit(20,-8);camera.zoom(0.5f);
+            command(Voice);voicePanel->smokeTest();
+            if(selected!=1 || project.analyze().edits!=1) throw std::runtime_error("Voice smoke changed data without approval or failed selection.");
+        }
         if(smokeFrame==3) {SetWindowPos(window,nullptr,0,0,px(1240),px(790),SWP_NOMOVE|SWP_NOZORDER);screenshot=L"evolve-v0.1-viewport.bmp";}
         if(smokeFrame==4) {
             if(renderer->captureNonBackgroundPixels()<500) throw std::runtime_error("Smoke test rendered no visible geometry.");
@@ -291,7 +361,7 @@ void Application::tick() {
             if(!project.hasResult() || project.result().edits!=1) throw std::runtime_error("Smoke test analysis did not complete.");
             atomicWrite(L"smoke-test.evolve",project.serialize());Project reopened;reopened.deserialize(readFile(L"smoke-test.evolve"));
             if(reopened.sequence()!=project.sequence()) throw std::runtime_error("Smoke test save/reopen failed.");
-            std::ofstream("smoke-test.log")<<"PASS: DX12 initialization, geometry readback, orbit/zoom, resize, compare, edit, mock analysis, save/reopen. Visible pixels: "<<renderer->captureNonBackgroundPixels()<<'\n';
+            std::ofstream("smoke-test.log")<<"PASS: DX12 initialization, geometry readback, orbit/zoom, resize, compare, edit, mock analysis, save/reopen, voice panel typed dispatch and rejected reset (mic/cloud disabled). Visible pixels: "<<renderer->captureNonBackgroundPixels()<<'\n';
             dirty=false;DestroyWindow(window);return;
         }
         if(smokeFrame>600) throw std::runtime_error("Smoke test timed out.");
@@ -320,7 +390,14 @@ LRESULT Application::message(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
             if(PtInRect(&rect,point)) {camera.zoom(static_cast<float>(GET_WHEEL_DELTA_WPARAM(wp))/WHEEL_DELTA);return 0;}
             break;
         }
-        case WM_CLOSE: if(confirmReplace()) DestroyWindow(hwnd);return 0;
+        case WM_CLOSE: {
+            struct CloseBusy {
+                evolve::voice::VoicePanel* panel;
+                explicit CloseBusy(evolve::voice::VoicePanel* p):panel(p) {if(panel) panel->setWorkspaceBusy(true);}
+                ~CloseBusy() {if(panel) panel->setWorkspaceBusy(false);}
+            } busy(voicePanel.get());
+            if(confirmReplace()) DestroyWindow(hwnd);return 0;
+        }
         case WM_DESTROY: KillTimer(hwnd,1);PostQuitMessage(failed ? 1:0);return 0;
         }
     } catch(const std::exception& e) {
@@ -354,6 +431,7 @@ LRESULT Application::viewportMessage(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
 int Application::loop() {
     MSG msg{};BOOL result;
     while((result=GetMessageW(&msg,nullptr,0,0))>0) {
+        if(voicePanel && voicePanel->dialogMessage(msg)) continue;
         if(msg.message==WM_KEYDOWN && (GetKeyState(VK_CONTROL)&0x8000)) {
             try {if(msg.wParam=='S') {command(Save);continue;}if(msg.wParam=='Z') {command(Undo);continue;}if(msg.wParam=='Y') {command(Redo);continue;}}
             catch(const std::exception& e) {error(e);}
