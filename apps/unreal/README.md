@@ -96,3 +96,23 @@ live API testing is relevant to this isolated renderer module.
 
 API references: [Epic procedural mesh API](https://dev.epicgames.com/documentation/en-us/unreal-engine/API/Plugins/ProceduralMeshComponent/UProceduralMeshComponent),
 [material editing API](https://dev.epicgames.com/documentation/en-us/unreal-engine/python-api/class/MaterialEditingLibrary).
+
+## Validation record — 2026-10-04
+
+- Linux clean CMake Debug build and all four CTest suites pass, including 16,123
+  bridge checks; bridge ASan/UBSan pass (LeakSanitizer is unsupported in the sandbox).
+- Windows UE 5.8.3 editor and standalone targets build; asset generation,
+  cook and Development packaging succeeded. A real packaged screenshot showed
+  the colored helix and HUD. Standard packaged smoke and a separate no-smoke run
+  exited successfully (code 0) through the engine console quit path.
+- Native Windows core/bridge tests and existing DX12 WARP smoke passed.
+- Full manual mouse/keyboard, window-close, resize and repeat-interaction checks
+  remain unverified. A screenshot and smoke PASS are not substitutes for these.
+- Optional CSV profiling triggered a local engine/profiler teardown failure
+  (`777003`, `CrashReporterCrashed`) despite normal final log messages. Runs with
+  `-csvNoProcessingThread` retained CSV output and exited 0; standard non-CSV
+  packaged runs also exited 0. Asset-generation validation likewise completed
+  with that flag. No POC shutdown bug was established; no engine/system settings
+  were changed. Do not present these diagnostics as a controlled GPU benchmark.
+- GitHub Actions for the feature PR failed before job steps/logs were available;
+  CI is not reported as passing and has not been manually rerun.

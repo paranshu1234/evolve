@@ -12,10 +12,10 @@ if material is None:
     material.set_editor_property("two_sided", True)
     # Both lit base color and subtle emission preserve readable base colors.
     color = unreal.MaterialEditingLibrary.create_material_expression(material, unreal.MaterialExpressionVertexColor)
-    unreal.MaterialEditingLibrary.connect_material_property(color, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+    unreal.MaterialEditingLibrary.connect_material_property(color, "", unreal.MaterialProperty.MP_BASE_COLOR)
     glow = unreal.MaterialEditingLibrary.create_material_expression(material, unreal.MaterialExpressionMultiply)
     glow.set_editor_property("const_b", 0.2)
-    unreal.MaterialEditingLibrary.connect_material_expressions(color, "RGB", glow, "A")
+    unreal.MaterialEditingLibrary.connect_material_expressions(color, "", glow, "A")
     unreal.MaterialEditingLibrary.connect_material_property(glow, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     roughness = unreal.MaterialEditingLibrary.create_material_expression(material, unreal.MaterialExpressionConstant)
     roughness.set_editor_property("r", 0.45)

@@ -89,7 +89,17 @@ void AEvolveScene::Frame(bool SelectionOnly)
     } else {
         // Helix framing deliberately excludes the optional large floor grid.
         const float Height = static_cast<float>(Project.sequence().size() - 1) * 62.f + 100.f;
-        Distance = FMath::Max(1000.f, Height * 1.5f);
+        int32 ViewX = 1440, ViewY = 900;
+        if (auto* PC = GetWorld()->GetFirstPlayerController()) {
+            PC->GetViewportSize(ViewX, ViewY);
+        }
+        // FieldOfView is horizontal. Derive vertical FOV to retain the full helix
+        // on widescreen displays, with room for perspective and the HUD.
+        const float Aspect = static_cast<float>(FMath::Max(ViewX, 1)) / FMath::Max(ViewY, 1);
+        const float VerticalHalfFov = FMath::Atan(
+            FMath::Tan(FMath::DegreesToRadians(Camera->FieldOfView * 0.5f)) / Aspect);
+        Distance = FMath::Max(1000.f, Height * 0.5f / FMath::Tan(VerticalHalfFov) * 1.95f);
+        Focus.Z = Height * 0.12f;
         Yaw = -35.f; Pitch = 12.f;
     }
     UpdateCamera();
