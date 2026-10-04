@@ -1,0 +1,12 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.8",
+  "Category": "Visualization",
+  "Description": "Evolve standalone schematic DNA renderer proof of concept",
+  "Modules": [{"Name": "EvolveUnreal", "Type": "Runtime", "LoadingPhase": "Default"}],
+  "Plugins": [
+    {"Name": "ProceduralMeshComponent", "Enabled": true},
+    {"Name": "PythonScriptPlugin", "Enabled": true, "TargetAllowList": ["Editor"]},
+    {"Name": "EditorScriptingUtilities", "Enabled": true, "TargetAllowList": ["Editor"]}
+  ]
+}

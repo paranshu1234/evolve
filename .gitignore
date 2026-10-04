@@ -16,3 +16,13 @@
 *.ilk
 *.log
 *.bmp
+# Unreal generated output and locally generated POC assets
+apps/unreal/**/Binaries/
+apps/unreal/**/Intermediate/
+apps/unreal/**/Saved/
+apps/unreal/**/DerivedDataCache/
+apps/unreal/**/Content/
+apps/unreal/**/Packages/
+*.sln
+
+**/__pycache__/
