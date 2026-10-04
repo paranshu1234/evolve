@@ -16,6 +16,12 @@ The original project vision is preserved in the repository's public concept docu
 - CSV result export, lighting control, optional completion sound and keyboard navigation.
 - Hardware DX12 with software WARP fallback; an automated renderer smoke mode.
 
+## Experimental Voice Agent (feature branch)
+
+Open **Voice Agent** from the workspace toolbar. Typed local commands work without a microphone or network. Optional local Windows speech provides push-to-talk and spoken replies; an optional OpenAI Responses adapter adds conversational interpretation of text and bounded workspace tools. Both microphone and cloud use start disabled. Cloud API usage is billed separately and requires explicit in-app consent and a user-provisioned key.
+
+This is experimental integration code, not evidence of live voice verification. See [voice controls and manual verification](docs/VOICE.md) and [conversational provider, privacy, and setup](docs/CONVERSATIONAL_PROVIDER.md). The scientific analysis remains the same mock composition calculation; the conversation model does not turn it into a biological predictor.
+
 ## Install, build and run on Windows
 
 ### Prerequisites

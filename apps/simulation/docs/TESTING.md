@@ -1,5 +1,15 @@
 # Verification
 
+## Experimental voice verification
+
+Local checks on 2026-10-04: clean Linux CMake Release configure/build and all three CTest executables passed (34 existing core checks, 327 voice checks, 125 provider checks). GCC strict-warning builds passed. ASan/UBSan fixtures passed with leak detection disabled because LeakSanitizer is unsupported under this environment's ptrace. WindowsVoice, VoicePanel, Main and ConversationalProvider translation units cross-compiled for Windows x64 using Zig 0.16/MinGW and Microsoft's DirectXMath headers. Cross-compilation does not prove MSVC, renderer runtime, microphone, TTS or live API behavior.
+
+The voice branch adds separate `evolve_voice_tests` and `evolve_provider_tests` executables. These exercise local parsing, strict action validation, request/revision/epoch guards, one-use confirmations, cancellation, replay rejection, JSON/provider fixtures, bounded conversational context and delayed transport completions without live audio or paid API calls.
+
+The WARP smoke path also opens the native Voice Agent panel, sends a typed selection through its Send control, rejects a pending restore, checks data preservation, and closes the panel. It asserts that microphone and cloud remain disabled. This is not live speech or cloud evidence.
+
+Before merging, run the existing Windows build/CTest/WARP workflow for the exact final commit and perform the [manual voice checks](VOICE.md). With explicit provider/data/billing approval and a user-provisioned key, separately verify live conversation, a safe edit plus undo, cancellation, follow-up reference, missing credentials, and provider failure. Do not replace these gates with fixture results.
+
 ## Monorepo verification performed on 2026-09-26
 
 - Clean configure and Release build passed with Visual Studio 2026 / MSVC 19.51.
