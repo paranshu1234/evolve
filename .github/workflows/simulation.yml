@@ -20,6 +20,20 @@ jobs:
       - run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - run: cmake --build build --parallel
       - run: ctest --test-dir build --output-on-failure
+  biology:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          python -m pip install --require-hashes --only-binary=:all: -r biology/requirements.lock
+      - run: python -m unittest discover -s biology/tests -v
+      - run: python biology/repressilator.py --output biology/output/ci.csv
   windows:
     runs-on: windows-latest
     steps:
@@ -56,7 +70,7 @@ jobs:
             apps/simulation/smoke-test.evolve
   release:
     if: startsWith(github.ref, 'refs/tags/simulation-v')
-    needs: [core, windows]
+    needs: [core, biology, windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write

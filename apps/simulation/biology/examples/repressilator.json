@@ -1,0 +1,152 @@
+{
+  "dependencies": {
+    "libroadrunner": "2.10.0",
+    "numpy": "2.2.6"
+  },
+  "format": "evolve-circuit-trace-v1",
+  "model": {
+    "assignment_rule_variables": [
+      "t_ave",
+      "beta",
+      "k_tl",
+      "a_tr",
+      "a0_tr",
+      "kd_prot",
+      "kd_mRNA",
+      "alpha",
+      "alpha0"
+    ],
+    "compartment": {
+      "count": 1,
+      "id": "cell",
+      "volume_litre": 1e-15
+    },
+    "model_id": "BIOMD0000000012",
+    "model_sha256": "0fb6eb542c51de086feb614550994536faf07fb07b134641887e8c377b128987",
+    "parameters_at_start": {
+      "KM": 40.0,
+      "a0_tr": 0.03,
+      "a_tr": 29.97,
+      "alpha": 216.18785187721116,
+      "alpha0": 0.21640425613334452,
+      "beta": 0.2,
+      "eff": 20.0,
+      "k_tl": 6.931471805599453,
+      "kd_mRNA": 0.34657359027997264,
+      "kd_prot": 0.06931471805599453,
+      "n": 2.0,
+      "ps_0": 0.0005,
+      "ps_a": 0.5,
+      "t_ave": 2.8853900817779268,
+      "tau_mRNA": 2.0,
+      "tau_prot": 10.0
+    },
+    "quantity_unit": "item_per_cell",
+    "reaction_count": 12,
+    "sbml_level": 2,
+    "sbml_version": 3,
+    "solver_build": "2.10.0; Compiler: gcc 11.2.1, C++ version: 202002; JIT Compiler: LLVM-13.0; Date: Aug  5 2026, 03:15:39; LibSBML Version: 5.21.1",
+    "species": [
+      {
+        "id": "PX",
+        "initial_amount": 0.0,
+        "name": "LacI protein"
+      },
+      {
+        "id": "PY",
+        "initial_amount": 0.0,
+        "name": "TetR protein"
+      },
+      {
+        "id": "PZ",
+        "initial_amount": 0.0,
+        "name": "cI protein"
+      },
+      {
+        "id": "X",
+        "initial_amount": 0.0,
+        "name": "LacI mRNA"
+      },
+      {
+        "id": "Y",
+        "initial_amount": 20.0,
+        "name": "TetR mRNA"
+      },
+      {
+        "id": "Z",
+        "initial_amount": 0.0,
+        "name": "cI mRNA"
+      }
+    ],
+    "time_unit": "minute",
+    "validation": {
+      "structural_checks": [
+        "general",
+        "identifiers",
+        "mathml",
+        "overdetermined"
+      ],
+      "structural_diagnostics": "",
+      "unit_consistency": "Incomplete parameter annotations; full dimensional consistency is not established",
+      "unit_warning_codes": [
+        "99505"
+      ],
+      "unit_warning_count": 21
+    }
+  },
+  "model_source": {
+    "license": "CC0-1.0",
+    "license_file": "LICENSE-CC0.txt",
+    "license_sha256": "5537d4d10b76b81b6e8dfd8b644480a4b1efa332fbb0cdb61126c5be781ef7b4",
+    "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+    "model_id": "BIOMD0000000012",
+    "model_name": "Elowitz2000 - Repressilator",
+    "model_url": "https://www.ebi.ac.uk/biomodels/BIOMD0000000012",
+    "modified": false,
+    "notes": "SBML and license copied byte-for-byte from the pinned official BioModels repository. Model defines six species, twelve reactions, and nine assignment rules. Time is minutes; species are item amounts in a single 1 fL cell. Parameter unit annotations are incomplete.",
+    "publication_doi": "10.1038/35002125",
+    "publication_url": "https://doi.org/10.1038/35002125",
+    "retrieved_date": "2026-10-09",
+    "sha256": "0fb6eb542c51de086feb614550994536faf07fb07b134641887e8c377b128987",
+    "source_commit": "7de3848305224ace0523c1328ac3423d2c007f68",
+    "source_path": "BIOMD0000000012/BIOMD0000000012.xml",
+    "source_repository": "https://github.com/biomodels/BIOMD0000000012"
+  },
+  "runtime": {
+    "machine": "x86_64",
+    "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+    "python": "3.12.14"
+  },
+  "scope": "Deterministic educational synthetic E. coli repressilator; not a whole-cell, HBB, medical, or sequence-effect prediction",
+  "settings": {
+    "absolute_tolerance": 1e-10,
+    "duration_minutes": 600.0,
+    "relative_tolerance": 1e-08,
+    "sample_minutes": 1.0
+  },
+  "solver": {
+    "integrator": "CVODE",
+    "maximum_num_steps": 100000,
+    "name": "libRoadRunner",
+    "stiff": true,
+    "variable_step_size": false,
+    "version": "2.10.0"
+  },
+  "trace": {
+    "columns": [
+      "time_minutes",
+      "X",
+      "Y",
+      "Z",
+      "PX",
+      "PY",
+      "PZ"
+    ],
+    "csv_filename": "repressilator.csv",
+    "csv_sha256": "b1ab618699c4426764b56809b5d09c3b806488cbe4d417f005e8fd9abb07e747",
+    "end_minutes": 600.0,
+    "negative_value_policy": "reject any negative amount; no clamping",
+    "rows": 601,
+    "start_minutes": 0.0
+  }
+}
