@@ -50,6 +50,10 @@ Result contract: run revision, baseline GC percentage, scenario GC percentage, e
 
 The full plan allowed an Unreal presentation client, Python scientific host, persistent job store, model registry, scientific provenance, and voice/assistant features. v0.1 implements the requested basic desktop interaction slice in native C++/DX12. None of those deferred systems are represented as working integrations. It has no runtime third-party package dependencies, model credentials or remote services.
 
+## Additive circuit milestone
+
+The experimental [circuit inspector](CIRCUIT.md) adds a separate pinned SBML/CVODE sidecar, immutable trajectory parser, elapsed-time playback controller, and shared vector scene displayed by an additive Win32 inspector. It does not replace `Project::analyze()`, the DNA editor, or the DX12 renderer. Replay requires no Python dependency; generation is an explicit separate local command with full provenance. This exception to the original v0.1 scope is intentionally bounded to one curated synthetic circuit.
+
 ## Next extension points
 
 1. Replace `Project::analyze()` behind an analysis interface with one scientifically supported adapter; extend inputs with biological context and reference identifiers.

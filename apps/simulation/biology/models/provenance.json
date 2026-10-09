@@ -1,0 +1,18 @@
+{
+  "model_id": "BIOMD0000000012",
+  "model_name": "Elowitz2000 - Repressilator",
+  "source_repository": "https://github.com/biomodels/BIOMD0000000012",
+  "source_commit": "7de3848305224ace0523c1328ac3423d2c007f68",
+  "source_path": "BIOMD0000000012/BIOMD0000000012.xml",
+  "model_url": "https://www.ebi.ac.uk/biomodels/BIOMD0000000012",
+  "publication_doi": "10.1038/35002125",
+  "publication_url": "https://doi.org/10.1038/35002125",
+  "sha256": "0fb6eb542c51de086feb614550994536faf07fb07b134641887e8c377b128987",
+  "license": "CC0-1.0",
+  "license_file": "LICENSE-CC0.txt",
+  "license_sha256": "5537d4d10b76b81b6e8dfd8b644480a4b1efa332fbb0cdb61126c5be781ef7b4",
+  "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+  "retrieved_date": "2026-10-09",
+  "modified": false,
+  "notes": "SBML and license copied byte-for-byte from the pinned official BioModels repository. Model defines six species, twelve reactions, and nine assignment rules. Time is minutes; species are item amounts in a single 1 fL cell. Parameter unit annotations are incomplete."
+}

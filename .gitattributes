@@ -1,0 +1,5 @@
+# Preserve pinned scientific bytes and generated-artifact hashes on Windows.
+apps/simulation/biology/models/BIOMD0000000012.xml -text -whitespace
+apps/simulation/biology/models/LICENSE-CC0.txt -text
+apps/simulation/biology/examples/repressilator.csv -text
+apps/simulation/biology/examples/repressilator.json -text

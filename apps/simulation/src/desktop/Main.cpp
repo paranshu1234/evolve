@@ -1,4 +1,5 @@
 #include "core/Project.h"
+#include "desktop/CircuitWindow.h"
 #include "renderer/Dx12Renderer.h"
 #include <windows.h>
 #include <windowsx.h>
@@ -19,7 +20,7 @@
 namespace {
 using namespace evolve;
 constexpr COLORREF Background=RGB(14,21,30),Panel=RGB(23,33,45),Text=RGB(224,234,242),Muted=RGB(140,162,182),Accent=RGB(67,217,182);
-enum Control {Demo=100,Import,Open,Save,Export,BaseList,BaseA,BaseC,BaseG,BaseT,Undo,Redo,Restore,Compare,Grid,Rotate,Frame,Run,Cancel,Sound,Light,Selection,Result,Progress,Status,Source};
+enum Control {Demo=100,Import,Open,Save,Export,BaseList,BaseA,BaseC,BaseG,BaseT,Undo,Redo,Restore,Compare,Grid,Rotate,Frame,Run,Cancel,Sound,Light,Selection,Result,Progress,Status,Source,Circuit};
 
 std::wstring wide(const std::string& s) {
     if(s.empty()) return {};
@@ -133,6 +134,7 @@ void Application::create(HINSTANCE instance) {
     button(L"A",BaseA);button(L"C",BaseC);button(L"G",BaseG);button(L"T",BaseT);
     button(L"Undo",Undo);button(L"Redo",Redo);button(L"Restore baseline",Restore);
     button(L"Compare: off",Compare);button(L"Grid: on",Grid);button(L"Rotate: off",Rotate);button(L"Frame all [F]",Frame);
+    button(L"Circuit lab",Circuit);
     button(L"Run mock analysis",Run);button(L"Cancel",Cancel);button(L"Sound: off",Sound);
     add(L"STATIC",L"Run analysis to compare sequence composition.",Result);
     add(PROGRESS_CLASSW,L"",Progress,PBS_SMOOTH);SendMessageW(control(Progress),PBM_SETRANGE32,0,100);
@@ -156,6 +158,7 @@ void Application::layout() {
     int vw=std::max(100,right-240),vh=std::max(100,h-270);
     MoveWindow(viewport,px(222),px(154),px(vw),px(vh),TRUE);
     place(Frame,222,111,118,30);place(Compare,348,111,120,30);place(Grid,476,111,91,30);place(Rotate,575,111,105,30);
+    place(Circuit,664,66,130,32);
     place(Status,22,h-33,w-44,23);
     if(renderer) renderer->resize(px(vw),px(vh));InvalidateRect(window,nullptr,TRUE);
 }
@@ -266,6 +269,7 @@ void Application::command(int id) {
     case Frame: frame();break;
     case Sound: sound=!sound;SetWindowTextW(control(Sound),sound ? L"Sound: on":L"Sound: off");break;
     case Run: if(!running) {pending=project.analyze();running=true;started=std::chrono::steady_clock::now();refresh(false);setStatus(L"Running mock composition analysis...");}break;
+    case Circuit: circuit::showCircuitWindow(window);break;
     case Cancel: cancel();refresh(false);setStatus(L"Analysis cancelled. Existing data preserved.");break;
     }
 }
@@ -354,6 +358,7 @@ LRESULT Application::viewportMessage(HWND hwnd,UINT msg,WPARAM wp,LPARAM lp) {
 int Application::loop() {
     MSG msg{};BOOL result;
     while((result=GetMessageW(&msg,nullptr,0,0))>0) {
+        if(circuit::dispatchCircuitMessage(msg)) continue;
         if(msg.message==WM_KEYDOWN && (GetKeyState(VK_CONTROL)&0x8000)) {
             try {if(msg.wParam=='S') {command(Save);continue;}if(msg.wParam=='Z') {command(Undo);continue;}if(msg.wParam=='Y') {command(Redo);continue;}}
             catch(const std::exception& e) {error(e);}
@@ -365,9 +370,10 @@ int Application::loop() {
 }
 
 int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,LPWSTR,int) {
+    std::filesystem::path circuitPath;
     Application app;int count{};LPWSTR* args=CommandLineToArgvW(GetCommandLineW(),&count);
-    if(args) {for(int i=1;i<count;++i) {if(std::wstring(args[i])==L"--warp") app.warp=true;if(std::wstring(args[i])==L"--smoke-test") app.smoke=true;}LocalFree(args);}
-    try {app.create(instance);return app.loop();}
+    if(args) {for(int i=1;i<count;++i) {if(std::wstring(args[i])==L"--warp") app.warp=true;if(std::wstring(args[i])==L"--smoke-test") app.smoke=true;if(std::wstring(args[i])==L"--circuit-trace" && i+1<count) circuitPath=args[++i];}LocalFree(args);}
+    try {if(!circuitPath.empty()) return evolve::circuit::runCircuitWindow(circuitPath);app.create(instance);return app.loop();}
     catch(const std::exception& error) {
         if(app.smoke) std::ofstream("smoke-test-error.log")<<error.what();
         else MessageBoxW(nullptr,wide(error.what()).c_str(),L"Evolve.ai could not start",MB_OK|MB_ICONERROR);
